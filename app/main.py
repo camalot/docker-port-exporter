@@ -46,16 +46,6 @@ class AppConfig():
 			self.hosts = self.hosts + env_hosts
 			print(f"Appended {len(env_hosts)} hosts from environment variables")
 
-		if len(env_certs) > 0:
-			# merge env_hosts with config file
-			self.certs = self.certs + env_certs
-			print(f"Appended {len(env_certs)} certs from environment variables")
-
-		if len(env_verify_tls) > 0:
-			# merge env_hosts with config file
-			self.verify_tls = self.verify_tls + env_verify_tls
-			print(f"Appended {len(env_verify_tls)} verify_tls from environment variables")
-
 		env_labels = self.find_labels_from_environment()
 		if len(env_labels) > 0:
 			# merge env_labels with config file
