@@ -22,9 +22,6 @@ class AppConfig():
 			"pollingInterval": int(dict_get(os.environ, "DPE_CONFIG_METRICS_POLLING_INTERVAL", "60"))
 		}
 		self.hosts = list()
-		self.certs = list()
-		self.verify_tls = list()
-
 		self.labels = list()
 
 		try:
@@ -131,6 +128,7 @@ class DockerPortMetrics:
 		# loop hosts
 		for host in hosts:
 			try:
+				print(f"fetching metrics from {host['scheme']}://{host['name']}:{host['port']}")
 				client = docker.APIClient(
 					base_url=f"{host['scheme']}://{host['name']}:{host['port']}",
 					# cert=f"{host['cert']}" if host['cert'] is not None else None,
@@ -140,6 +138,7 @@ class DockerPortMetrics:
 				containers = client.containers(all=True)
 				# loop containers
 				for container in containers:
+					print(f"container {container['name']} id: {container['Id']}")
 					# print all keys for container
 					for key in container.keys():
 						print(f"container {container['Id']} key: {key}")
