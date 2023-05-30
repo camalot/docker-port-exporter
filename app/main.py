@@ -8,6 +8,7 @@ import yaml
 import re
 import os
 import time
+import traceback
 from dotenv import load_dotenv, find_dotenv
 import datetime
 
@@ -111,12 +112,33 @@ class AppConfig():
 
 class DockerPortMetrics:
 	def __init__(self, config):
-		self.namespace = "docker_port"
+		self.namespace = "docker"
 		self.polling_interval_seconds = config.metrics['pollingInterval']
 		self.config = config
-		labels = [ ]
+		base_labels = [
+			"endpoint",
+			"name",
+			"id"
+		]
 
-		labels = labels + [x['name'] for x in self.config.labels]
+		labels = base_labels + [x['name'] for x in self.config.labels]
+
+		port_labels = [
+			"public_port",
+			"private_port",
+			"transport",
+		]
+
+		port_labels = port_labels + base_labels
+		volume_labels = [
+			"source",
+			"destination",
+			"mode"
+		]
+		volume_labels = volume_labels + base_labels
+
+		self.ports = Gauge(namespace=self.namespace, name=f"port", documentation="", labelnames=port_labels)
+		self.volumes = Gauge(namespace=self.namespace, name=f"volume", documentation="", labelnames=volume_labels)
 
 	def run_metrics_loop(self):
 		"""Metrics fetching loop"""
@@ -153,17 +175,43 @@ class DockerPortMetrics:
 					tls=host['verify'] if host['cert'] is not None else False,
 					)
 				# get containers
-				containers = client.containers(all=True)
+				containers = client.containers(all=True, filters={"status": "running"})
 				# loop containers
+				# only get running containers
 				for container in containers:
-					print(f"container {container['name']} id: {container['Id']}")
-					# print all keys for container
-					for key in container.keys():
-						print(f"container {container['Id']} key: {key}")
+					print(f"container id: {container['Id']}")
+
+					for port in [p for p in container['Ports'] if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", p['IP']) is not None]:
+						print(f"public port: {port['PublicPort']}")
+						print(f"private port: {port['PrivatePort']}")
+						print(f"transport: {port['Type']}")
+
+						port_labels = {
+							"endpoint": f"{host['scheme']}:{host['name']}{host['port']}",
+							"name": container['Names'][0].replace('/', ''),
+							"id": container['Id'],
+							"public_port": port['PublicPort'],
+							"private_port": port['PrivatePort'],
+							"transport": port['Type']
+						}
+
+						self.ports.labels(**port_labels).set(1)
+
+					for volume in [m for m in container['Mounts'] if m['Type'] == "bind"]:
+						volume_labels = {
+							"endpoint": f"{host['scheme']}:{host['name']}{host['port']}",
+							"name": container['Names'][0].replace('/', ''),
+							"id": container['Id'],
+							"source": volume['Source'],
+							"destination": volume['Destination'],
+							"mode": volume['Mode']
+						}
+						self.volumes.labels(**volume_labels).set(1)
 
 			except Exception as e:
 				error_count += 1
-				print(f"Error fetching metrics from {host['scheme']}:{host['name']}{host['port']}: {e}")
+				print(f"Error fetching metrics from {host['scheme']}:{host['name']}{host['port']}")
+				traceback.print_exc()
 		print(f"end metrics fetch")
 
 def dict_get(dictionary, key, default_value = None):
