@@ -1,0 +1,8 @@
+.env
+.editorconfig
+.gitignore
+Dockerfile
+config/
+docker-compose.yml
+grafana/
+.github/
