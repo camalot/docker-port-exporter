@@ -18,7 +18,7 @@ class AppConfig():
 	def __init__(self, file: str):
 		# set defaults for config from environment variables if they exist
 		self.metrics = {
-			"port": int(dict_get(os.environ, "DPE_CONFIG_METRICS_PORT", "8932")),
+			"port": int(dict_get(os.environ, "DPE_CONFIG_METRICS_PORT", "8931")),
 			"pollingInterval": int(dict_get(os.environ, "DPE_CONFIG_METRICS_POLLING_INTERVAL", "60"))
 		}
 		self.hosts = list()
@@ -120,7 +120,7 @@ class AppConfig():
 
 class DockerPortMetrics:
 	def __init__(self, config):
-		self.namespace = "x509"
+		self.namespace = "docker_port"
 		self.polling_interval_seconds = config.metrics['pollingInterval']
 		self.config = config
 		labels = [ ]
