@@ -77,7 +77,7 @@ class AppConfig():
 			host_id_match = re.match(r"^DPE_CONFIG_URL_(\d{1,})$", env, re.IGNORECASE | re.DOTALL)
 			if host_id_match:
 				host_id = host_id_match.group(1)
-				print(f"Found Host from Environment Variable: {env}")
+				print(f"Found Host from Environment Variable: {env} = {os.environ[env]}")
 				# split value by :
 				values = os.environ[env].split(":")
 				# check if we have 2 values
@@ -86,23 +86,27 @@ class AppConfig():
 				# check if we have a cert path for this host
 				if os.environ.get(f"DPE_CONFIG_CERT_PATH_{host_id}", None) is not None:
 					cert = os.environ[f"DPE_CONFIG_CERT_PATH_{host_id}"]
+					print(f"Found Cert Path for {host_id}: {cert}")
 
 				# check if we have a tls verify for this host
 				verify = False
 				if os.environ.get(f"DPE_CONFIG_TLS_VERIFY_{host_id}", None) is not None:
+					print(f"Found TLS Verify for {host_id}: {os.environ[f'DPE_CONFIG_TLS_VERIFY_{host_id}']}")
 					booly = os.environ[f"DPE_CONFIG_TLS_VERIFY_{host_id}"]
 					if booly.lower() == "true" or booly.lower() == "1" or booly.lower() == "yes":
 						verify = True
 
-				if len(values) == 3:
+				if len(values) >= 2 or len(values) <= 3:
 					# add to hosts
 					hosts.append({
 						"scheme": values[0],
 						"name": values[1],
-						"port": values[2],
+						"port": values[2] if len(values) == 3 else "",
 						"cert": cert,
 						"verify": verify
 					})
+				else:
+					print(f"Invalid host config for {env} - expected 3 values, got {len(values)} : {os.environ[env]}")
 		return hosts
 
 class DockerPortMetrics:
@@ -126,11 +130,25 @@ class DockerPortMetrics:
 		hosts = self.config.hosts
 		error_count = 0
 		# loop hosts
+		print(f"found {len(hosts)} hosts")
+
 		for host in hosts:
 			try:
-				print(f"fetching metrics from {host['scheme']}://{host['name']}:{host['port']}")
+				if host['scheme'] is None or host['scheme'] == "unix":
+					if host['port'] is not None and host['port'] != "":
+						host['port'] = ""
+				elif host['scheme'] != "tcp":
+					if host['port'] is None or host['port'] != "2375":
+						host['port'] = f":{host['port']}"
+
+				if host['port'] is not None and host['port'] != "":
+					host['port'] = f":{host['port']}"
+
+
+				print(f"fetching metrics from {host['scheme']}://{host['name']}{host['port']}")
+
 				client = docker.APIClient(
-					base_url=f"{host['scheme']}://{host['name']}:{host['port']}",
+					base_url=f"{host['scheme']}://{host['name']}{host['port']}",
 					# cert=f"{host['cert']}" if host['cert'] is not None else None,
 					tls=host['verify'] if host['cert'] is not None else False,
 					)
@@ -145,7 +163,7 @@ class DockerPortMetrics:
 
 			except Exception as e:
 				error_count += 1
-				print(f"Error fetching metrics from {host['name']}:{host['port']}: {e}")
+				print(f"Error fetching metrics from {host['name']}{host['port']}: {e}")
 		print(f"end metrics fetch")
 
 def dict_get(dictionary, key, default_value = None):
