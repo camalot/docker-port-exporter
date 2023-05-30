@@ -17,7 +17,7 @@ LABEL VERSION="${BUILD_VERSION}"
 LABEL PROJECT_NAME="${PROJECT_NAME}"
 
 
-COPY . /app
+COPY ./app /app
 
 RUN \
 	apk update && \
