@@ -179,11 +179,7 @@ class DockerPortMetrics:
 				# loop containers
 				# only get running containers
 				for container in containers:
-					print(f"container id: {container['Id']}")
-
 					for port in [p for p in container['Ports'] if "IP" not in p or re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", p['IP']) is not None]:
-						print(f"port: {port}")
-
 						port_labels = {
 							"endpoint": f"{host['scheme']}:{host['name']}{host['port']}",
 							"name": container['Names'][0].replace('/', ''),
