@@ -164,7 +164,7 @@ class DockerPortMetrics:
 						host['port'] = f":{host['port']}"
 
 				if host['port'] is not None and host['port'] != "":
-					host['port'] = f":{host['port']}"
+					host['port'] = f":{host['port'].replace(':', '')}"
 
 
 				print(f"fetching metrics from {host['scheme']}:{host['name']}{host['port']}")
@@ -181,16 +181,14 @@ class DockerPortMetrics:
 				for container in containers:
 					print(f"container id: {container['Id']}")
 
-					for port in [p for p in container['Ports'] if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", p['IP']) is not None]:
-						print(f"public port: {port['PublicPort']}")
-						print(f"private port: {port['PrivatePort']}")
-						print(f"transport: {port['Type']}")
+					for port in [p for p in container['Ports'] if "IP" not in p or re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", p['IP']) is not None]:
+						print(f"port: {port}")
 
 						port_labels = {
 							"endpoint": f"{host['scheme']}:{host['name']}{host['port']}",
 							"name": container['Names'][0].replace('/', ''),
 							"id": container['Id'],
-							"public_port": port['PublicPort'],
+							"public_port": port['PublicPort'] if "PublicPort" in port else port['PrivatePort'],
 							"private_port": port['PrivatePort'],
 							"transport": port['Type']
 						}
