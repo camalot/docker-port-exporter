@@ -145,10 +145,10 @@ class DockerPortMetrics:
 					host['port'] = f":{host['port']}"
 
 
-				print(f"fetching metrics from {host['scheme']}://{host['name']}{host['port']}")
+				print(f"fetching metrics from {host['scheme']}:{host['name']}{host['port']}")
 
 				client = docker.APIClient(
-					base_url=f"{host['scheme']}://{host['name']}{host['port']}",
+					base_url=f"{host['scheme']}:{host['name']}{host['port']}",
 					# cert=f"{host['cert']}" if host['cert'] is not None else None,
 					tls=host['verify'] if host['cert'] is not None else False,
 					)
@@ -163,7 +163,7 @@ class DockerPortMetrics:
 
 			except Exception as e:
 				error_count += 1
-				print(f"Error fetching metrics from {host['name']}{host['port']}: {e}")
+				print(f"Error fetching metrics from {host['scheme']}:{host['name']}{host['port']}: {e}")
 		print(f"end metrics fetch")
 
 def dict_get(dictionary, key, default_value = None):
