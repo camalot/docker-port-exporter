@@ -37,7 +37,7 @@ class AppConfig():
 		except yaml.YAMLError as exc:
 			print(exc)
 
-		env_hosts, env_certs, env_verify_tls = self.find_hosts_from_environment()
+		env_hosts = self.find_hosts_from_environment()
 
 
 		# unix://var/run/docker.sock
